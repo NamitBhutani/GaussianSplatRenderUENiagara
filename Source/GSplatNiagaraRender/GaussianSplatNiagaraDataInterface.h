@@ -63,10 +63,7 @@ public:
     virtual void GetVMExternalFunction(const FVMExternalFunctionBindingInfo& BindingInfo, void* InstanceData, FVMExternalFunction& OutFunc) override;
 
     // Force GPU-only execution
-    virtual bool CanExecuteOnTarget(ENiagaraSimTarget Target) const override
-    {
-return true;
-    }
+    virtual bool CanExecuteOnTarget(ENiagaraSimTarget Target) const override;
 
     // GPU support
     virtual void BuildShaderParameters(FNiagaraShaderParametersBuilder& ShaderParametersBuilder) const override;

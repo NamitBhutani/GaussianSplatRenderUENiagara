@@ -9,6 +9,4 @@
 #include "PLYParser.h"
 #include "GaussianSplatNiagaraDataInterface.h"
 #include "GaussianSplatActor.h"
-#include "GaussianSplatBlueprintLibrary.h"
-
 

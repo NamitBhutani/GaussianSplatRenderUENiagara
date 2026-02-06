@@ -159,11 +159,11 @@ bool UGaussianSplatNiagaraDataInterface::Equals(const UNiagaraDataInterface* Oth
 }
 
 
-/*bool UGaussianSplatNiagaraDataInterface::CanExecuteOnTarget(ENiagaraSimTarget Target) const
+bool UGaussianSplatNiagaraDataInterface::CanExecuteOnTarget(ENiagaraSimTarget Target) const
 {
 	// Support both CPU and GPU execution
 	return true;
-}*/
+}
 
 void UGaussianSplatNiagaraDataInterface::GetFunctions(TArray<FNiagaraFunctionSignature>& OutFunctions)
 {
@@ -449,50 +449,29 @@ void UGaussianSplatNiagaraDataInterface::BuildShaderParameters(FNiagaraShaderPar
 	ShaderParametersBuilder.AddNestedStruct<FGaussianSplatShaderParameters>();
 }
 
-void UGaussianSplatNiagaraDataInterface::SetShaderParameters(
-	const FNiagaraDataInterfaceSetShaderParametersContext& Context) const
+	void UGaussianSplatNiagaraDataInterface::SetShaderParameters(const FNiagaraDataInterfaceSetShaderParametersContext& Context) const
 {
-	FGaussianSplatShaderParameters* ShaderParameters = 
-		Context.GetParameterNestedStruct<FGaussianSplatShaderParameters>();
-    
+	FGaussianSplatShaderParameters* ShaderParameters = Context.GetParameterNestedStruct<FGaussianSplatShaderParameters>();
 	if (!ShaderParameters) return;
-    
+
 	FNDIGaussianSplatProxy& DIProxy = Context.GetProxy<FNDIGaussianSplatProxy>();
-    
-	// Access data via Shared Pointer
-	int32 SplatCount = 0;
-	if (SplatData.IsValid())
-	{
-		SplatCount = SplatData->Num();
-	}
-    
-	// Upload logic
-	if (SplatCount > 0 && DIProxy.SplatsCount != SplatCount)
-	{
-		if (DIProxy.AreBuffersValid())
-		{
-			DIProxy.ReleaseBuffers();
-		}
-        
-		DIProxy.InitializeBuffers(SplatCount);
-        
-		// Pass the array inside the shared pointer to the proxy
-		DIProxy.UploadDataToGPU(*SplatData); 
-        
-		DIProxy.SplatsCount = SplatCount;
-		DIProxy.GlobalTint = FVector3f(GlobalTint);
-	}
-    
-	// Bind parameters
+
+	// Bind Constants
 	ShaderParameters->SplatsCount = DIProxy.SplatsCount;
 	ShaderParameters->GlobalTint = DIProxy.GlobalTint;
-	ShaderParameters->Positions = DIProxy.PositionsBuffer.SRV;
-	ShaderParameters->Scales = DIProxy.ScalesBuffer.SRV;
-	ShaderParameters->Orientations = DIProxy.OrientationsBuffer.SRV;
-	ShaderParameters->SHZeroCoeffsAndOpacity = DIProxy.SHZeroCoeffsAndOpacityBuffer.SRV;
+
+	// Bind Buffers (Only if valid)
+	if (DIProxy.AreBuffersValid())
+	{
+		ShaderParameters->Positions = DIProxy.PositionsBuffer.SRV;
+		ShaderParameters->Scales = DIProxy.ScalesBuffer.SRV;
+		ShaderParameters->Orientations = DIProxy.OrientationsBuffer.SRV;
+		ShaderParameters->SHZeroCoeffsAndOpacity = DIProxy.SHZeroCoeffsAndOpacityBuffer.SRV;
+	}
+	else
+	{
+	}
 }
-
-
 
 void UGaussianSplatNiagaraDataInterface::GetParameterDefinitionHLSL(const FNiagaraDataInterfaceGPUParamInfo& ParamInfo, FString& OutHLSL)
 {
@@ -645,51 +624,55 @@ void UGaussianSplatNiagaraDataInterface::MarkRenderDataDirty()
 
 void UGaussianSplatNiagaraDataInterface::PrepareGPUData()
 {
-    if (!SplatData.IsValid())
-    {
-        return;
-    }
+	if (!SplatData.IsValid())
+	{
+		return;
+	}
 
-    FNDIGaussianSplatProxy* SplatProxy = static_cast<FNDIGaussianSplatProxy*>(Proxy.Get());
-    if (!SplatProxy)
-    {
-        return;
-    }
+	FNDIGaussianSplatProxy* SplatProxy = static_cast<FNDIGaussianSplatProxy*>(Proxy.Get());
+	if (!SplatProxy)
+	{
+		return;
+	}
 
-    const int32 Count = SplatData->Num();
+	// Only upload if data has changed or if the proxy is uninitialized
+	const int32 Count = SplatData->Num();
+	const bool bProxyNeedsInit = (!SplatProxy->AreBuffersValid() || SplatProxy->SplatsCount != Count);
 
-if (Count > 0 && (!SplatProxy->AreBuffersValid() || SplatProxy->SplatsCount != Count))    {
-         SplatProxy->InitializeBuffers(Count);
-        
-         SplatProxy->UploadDataToGPU(*SplatData); 
-        
-         SplatProxy->SplatsCount = Count;
-         SplatProxy->GlobalTint = FVector3f(GlobalTint.R, GlobalTint.G, GlobalTint.B);
-        
-         UE_LOG(LogTemp, Log, TEXT("PrepareGPUData: Uploaded %d splats to GPU (Game Thread fallback)"), Count);
-    }
-    else if (Count == 0 && !SplatProxy->PositionsBuffer.IsValid())
-    {
-       SplatProxy->InitializeBuffers(1);
-        
-       TArray<FGaussianSplatData> DummyData;
-       FGaussianSplatData DummySplat;
-       DummySplat.Position = FVector::ZeroVector;
-       DummySplat.Scale = FVector::OneVector;
-       DummySplat.Orientation = FQuat::Identity;
-       DummySplat.Opacity = 0.0f;
-       DummySplat.ZeroOrderHarmonicsCoefficients = FVector::ZeroVector;
-       DummyData.Add(DummySplat);
-        
-       SplatProxy->UploadDataToGPU(DummyData);
-       SplatProxy->SplatsCount = 0; 
-    }
+	if (bGPUDataDirty || bProxyNeedsInit)
+	{
+		if (Count > 0)
+		{
+			SplatProxy->InitializeBuffers(Count);
+			SplatProxy->UploadDataToGPU(*SplatData);
+			SplatProxy->SplatsCount = Count;
+			SplatProxy->GlobalTint = FVector3f(GlobalTint.R, GlobalTint.G, GlobalTint.B);
+
+			UE_LOG(LogTemp, Log, TEXT("PrepareGPUData: Uploaded %d splats to GPU"), Count);
+		}
+		else
+		{
+			// Handle dummy case
+			if (!SplatProxy->PositionsBuffer.IsValid())
+			{
+				SplatProxy->InitializeBuffers(1);
+				// Upload explicit dummy data so the buffer isn't garbage
+				TArray<FGaussianSplatData> DummyData;
+				DummyData.AddDefaulted(1); 
+				SplatProxy->UploadDataToGPU(DummyData);
+				SplatProxy->SplatsCount = 0;
+			}
+		}
+
+		// Mark as clean so we don't upload again next frame
+		bGPUDataDirty = false; 
+	}
 }
 
 bool UGaussianSplatNiagaraDataInterface::PerInstanceTick(void* PerInstanceData, FNiagaraSystemInstance* SystemInstance, float DeltaSeconds)
 {
 	PrepareGPUData();
-	return true; 
+	return false; 
 }
 
 #undef LOCTEXT_NAMESPACE

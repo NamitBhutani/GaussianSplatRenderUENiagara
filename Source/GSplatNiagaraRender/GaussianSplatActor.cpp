@@ -68,7 +68,6 @@ void AGaussianSplatActor::BeginPlay()
     UE_LOG(LogTemp, Warning, TEXT("║       BeginPlay Called!                ║"));
     UE_LOG(LogTemp, Warning, TEXT("╚════════════════════════════════════════╝"));
     
-    
     const int32 SplatCount = GetSplatCount();
     UE_LOG(LogTemp, Warning, TEXT("SplatDataInterface has %d splats"), SplatCount);
     
@@ -76,6 +75,23 @@ void AGaussianSplatActor::BeginPlay()
     {
         // Bind and activate Niagara
         UE_LOG(LogTemp, Warning, TEXT("Binding NDI and activating Niagara..."));
+        
+        UE_LOG(LogTemp, Warning, TEXT("=== DEBUG: LISTING NIAGARA PARAMETERS ==="));
+        if (NiagaraComponent && NiagaraComponent->GetAsset())
+        {
+            const UNiagaraSystem* System = NiagaraComponent->GetAsset();
+            
+            TArray<FNiagaraVariable> UserVars;
+            System->GetExposedParameters().GetUserParameters(UserVars);
+        
+            for (const FNiagaraVariable& Var : UserVars)
+            {
+                UE_LOG(LogTemp, Warning, TEXT("Found User Parameter: '%s' (Type: %s)"), 
+                    *Var.GetName().ToString(), 
+                    *Var.GetType().GetName());
+            }
+        }
+        
         RefreshNiagaraSystem();
         UE_LOG(LogTemp, Warning, TEXT("✓ Niagara activated with %d splats"), SplatCount);
     }
@@ -160,37 +176,37 @@ void AGaussianSplatActor::RefreshNiagaraSystem()
 {
     if (!NiagaraComponent || !SplatDataInterface)
     {
-        UE_LOG(LogTemp, Error, TEXT("❌ RefreshNiagaraSystem: Component or Interface is NULL!"));
+        UE_LOG(LogTemp, Error, TEXT("RefreshNiagaraSystem: Component or Interface is NULL!"));
         return;
     }
 
-    UE_LOG(LogTemp, Error, TEXT(""));
-    UE_LOG(LogTemp, Error, TEXT("╔════════════════════════════════════════╗"));
-    UE_LOG(LogTemp, Error, TEXT("║   RefreshNiagaraSystem Called!         ║"));
-    UE_LOG(LogTemp, Error, TEXT("╚════════════════════════════════════════╝"));
-    UE_LOG(LogTemp, Error, TEXT("SplatDataInterface->GetSplatCount() = %d"), 
+    UE_LOG(LogTemp, Warning, TEXT(""));
+    UE_LOG(LogTemp, Warning, TEXT("╔════════════════════════════════════════╗"));
+    UE_LOG(LogTemp, Warning, TEXT("║   RefreshNiagaraSystem Called!         ║"));
+    UE_LOG(LogTemp, Warning, TEXT("╚════════════════════════════════════════╝"));
+    UE_LOG(LogTemp, Warning, TEXT("SplatDataInterface->GetSplatCount() = %d"), 
         SplatDataInterface->GetSplatCount());
     
+    //force Deactivate to ensure a clean state
+    NiagaraComponent->DeactivateImmediate();
     
-    UE_LOG(LogTemp, Error, TEXT("Deactivating system..."));
-    if (NiagaraComponent->IsActive())
-    {
-        NiagaraComponent->DeactivateImmediate();
-    }
+    //NiagaraComponent->SetVariableObject(FName("User.GaussianSplatData"), nullptr);
+    NiagaraComponent->SetVariableObject(FName("GaussianSplatData"), nullptr);
     
-    UE_LOG(LogTemp, Error, TEXT("Clearing old binding..."));
-    NiagaraComponent->SetVariableObject(FName(TEXT("User.GaussianSplatData")), nullptr);
+    UE_LOG(LogTemp, Warning, TEXT("Binding NDI to parameter 'GaussianSplatData'..."));
     
-    UE_LOG(LogTemp, Error, TEXT("Binding NDI with %d splats..."), 
-        SplatDataInterface->GetSplatCount());
-    NiagaraComponent->SetVariableObject(FName(TEXT("User.GaussianSplatData")), SplatDataInterface);
+    NiagaraComponent->SetVariableObject(FName("GaussianSplatData"), SplatDataInterface);
     
-    UE_LOG(LogTemp, Error, TEXT("Activating system..."));
+    // fallbackbinding
+    //NiagaraComponent->SetVariableObject(FName("User.GaussianSplatData"), SplatDataInterface);
+    
+    NiagaraComponent->ReinitializeSystem();
+    
     NiagaraComponent->Activate(true);
     
-    UE_LOG(LogTemp, Error, TEXT("✓ System refreshed"));
-    UE_LOG(LogTemp, Error, TEXT("═══════════════════════════════════════"));
-    UE_LOG(LogTemp, Error, TEXT(""));
+    UE_LOG(LogTemp, Warning, TEXT("✓ System refreshed and activated"));
+    UE_LOG(LogTemp, Warning, TEXT("═══════════════════════════════════════"));
+    UE_LOG(LogTemp, Warning, TEXT(""));
 }
 
 void AGaussianSplatActor::SetupNiagaraComponent()

@@ -49,57 +49,35 @@ struct FPLYProperty
 	}
 };
 
-/**
- * Parser for PLY (Polygon File Format) files
- * Supports both ASCII and binary formats
- * Specifically designed for Gaussian Splat data
- */
 class GSPLATNIAGARARENDER_API FPLYParser
 {
 public:
 	FPLYParser();
 	~FPLYParser();
-
-	/**
-	 * Parse a PLY file and extract Gaussian Splat data
-	 * @param FilePath Path to the PLY file
-	 * @param OutSplats Array to store parsed splat data
-	 * @return true if parsing was successful
-	 */
+	
 	bool ParseFile(const FString& FilePath, TArray<FGaussianSplatData>& OutSplats);
 
-	/** Get the number of vertices/splats in the parsed file */
 	int32 GetVertexCount() const { return VertexCount; }
 
-	/** Get the format of the parsed PLY file */
 	EPLYFormat GetFormat() const { return Format; }
 
-	/** Get any error message from parsing */
 	FString GetErrorMessage() const { return ErrorMessage; }
 
 private:
-	/** Parse the PLY header to extract format and property information */
 	bool ParseHeader(const TArray<FString>& Lines, int32& OutHeaderEndLine);
 
-	/** Parse ASCII format PLY data */
 	bool ParseASCIIData(const TArray<FString>& Lines, int32 StartLine, TArray<FGaussianSplatData>& OutSplats);
 
-	/** Parse binary format PLY data */
 	bool ParseBinaryData(const TArray<uint8>& FileData, int32 HeaderByteOffset, TArray<FGaussianSplatData>& OutSplats);
 
-	/** Read a float value from binary data */
 	float ReadFloat(const uint8* Data, int32& Offset, bool bBigEndian);
 
-	/** Read a double value from binary data */
 	double ReadDouble(const uint8* Data, int32& Offset, bool bBigEndian);
 
-	/** Find property index by name */
 	int32 FindPropertyIndex(const FString& Name) const;
 
-	/** Calculate the byte size of a single vertex */
 	int32 CalculateVertexByteSize() const;
 
-	/** Extract splat data from property values */
 	FGaussianSplatData ExtractSplatData(const TArray<float>& PropertyValues);
 
 private:

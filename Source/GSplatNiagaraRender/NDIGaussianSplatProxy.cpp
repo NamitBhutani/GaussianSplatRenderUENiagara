@@ -124,7 +124,6 @@ void FNDIGaussianSplatProxy::UploadDataToGPU(const TArray<FGaussianSplatData>& S
         );
     }
     
-    // ===== UPLOAD TO GPU =====
     // Capture data by move to avoid copies
     ENQUEUE_RENDER_COMMAND(UploadGaussianSplatData)(
         [this, 
@@ -177,7 +176,7 @@ void FNDIGaussianSplatProxy::CreateBuffer(FGaussianSplatBuffer& OutBuffer, uint3
             // Create vertex buffer for GPU access
             OutBuffer.Buffer = RHICmdList.CreateVertexBuffer(
                 BufferSize,
-                BUF_ShaderResource | BUF_Dynamic, // Changed to BUF_Dynamic for updates
+                BUF_ShaderResource | BUF_Dynamic,
                 CreateInfo
             );
 
@@ -185,7 +184,7 @@ void FNDIGaussianSplatProxy::CreateBuffer(FGaussianSplatBuffer& OutBuffer, uint3
             OutBuffer.SRV = RHICmdList.CreateShaderResourceView(
                 OutBuffer.Buffer,
                 BytesPerElement,
-                PF_A32B32G32R32F // Float4 format
+                PF_A32B32G32R32F
             );
         }
     );
