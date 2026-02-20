@@ -1,34 +1,44 @@
 {
-	"FileVersion": 3,
-	"EngineAssociation": "5.7",
-	"Category": "",
-	"Description": "",
-	"Modules": [
-		{
-			"Name": "GSplatNiagaraRender",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		}
-	],
-	"Plugins": [
-		{
-			"Name": "Niagara",
-			"Enabled": true
-		},
-		{
-			"Name": "ModelingToolsEditorMode",
-			"Enabled": true
-		},
-		{
-			"Name": "AIAssistant",
-			"Enabled": true
-		},
-		{
-			"Name": "UnrealMCP",
-			"Enabled": false
-		}
-	],
-	"AdditionalPluginDirectories": [
-		"Plugins"
-	]
+  "FileVersion": 3,
+  "EngineAssociation": "{8F920340-4C8A-8872-80F4-DA8972A79B38}",
+  "Category": "",
+  "Description": "",
+  "Modules": [
+    {
+      "Name": "GSplatNiagaraRender",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "Niagara",
+      "Enabled": true
+    },
+    {
+      "Name": "ModelingToolsEditorMode",
+      "Enabled": true
+    },
+    {
+      "Name": "AIAssistant",
+      "Enabled": true
+    },
+    {
+      "Name": "UnrealMCP",
+      "Enabled": false
+    },
+    {
+      "Name": "VisualStudioTools",
+      "Enabled": true,
+      "SupportedTargetPlatforms": [
+        "Win64"
+      ]
+    }
+  ],
+  "TargetPlatforms": [],
+  "AdditionalRootDirectories": [],
+  "AdditionalPluginDirectories": [
+    "Plugins"
+  ],
+  "EpicSampleNameHash": ""
 }

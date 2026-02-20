@@ -1,0 +1,13 @@
+# Use strict consistency
+BasedOnStyle: LLVM
+
+# Tabs vs Spaces
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+
+# C++ Specifics
+AccessModifierOffset: -4
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: Empty
+ColumnLimit: 120
